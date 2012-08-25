@@ -5,6 +5,7 @@ import re
 from itertools import compress
 from pprint import pprint
 from dateprocessing import getDateSpan,DateFromTo
+from datejsondecoder import dumps
 
 tree = etree.parse("original3.html",etree.HTMLParser())
 
@@ -106,4 +107,5 @@ for state,other,tab in pairs[:46]:
 	stateresults.append(newstate)
 
 
-pprint(stateresults)
+#pprint(stateresults)
+print dumps(stateresults)
