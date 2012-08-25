@@ -7,7 +7,7 @@ from pprint import pprint
 from dateprocessing import getDateSpan,DateFromTo
 from datejsondecoder import dumps
 
-tree = etree.parse("original3.html",etree.HTMLParser())
+tree = etree.parse("original.html",etree.HTMLParser())
 
 states = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/h3")
 other = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/p")[1:]
