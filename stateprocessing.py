@@ -51,7 +51,6 @@ for state,other,tab in pairs[:46]:
 	newstate = dict()
 	newstate['name']=state.xpath("span[@class='mw-headline']/a")[0].text
 	newstate['votes']=int(other.xpath("b[1]/text()")[0].split(' ')[0])
-	print state.xpath("span[@class='mw-headline']/a")[0].text
 	data = map(lambda x:getpcts(x[2:]),compress(other.xpath("text()"),[0,1,0,1]))
 	newstate['2004']=(other.xpath("a[1]/text()")[0].split(' ')[0],data[0])
 	newstate['2008']=(other.xpath("a[2]/text()")[0].split(' ')[0],data[1])
@@ -61,9 +60,9 @@ for state,other,tab in pairs[:46]:
 			newpoll = dict()
 			newpoll['pollers'] = map(lambda x:x.strip(),row.xpath("td[1]/a/text()"))
 			newpoll['url'] = row.xpath("td[1]/a/@href")
-			newpoll['date struct'] = getDateSpan(row.xpath("td[2]/text()"))
- 			print map(lambda x:x.strip(),row.xpath("td[1]/a/text()")),
-			print row.xpath("td[2]/text()")
+			dates = getDateSpan(row.xpath("td[2]/text()"))
+			newpoll['fromDate'] = dates.startDate
+			newpoll['toDate'] = dates.endDate
 			samplesize = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))[0]
 			sampleresult = samplere.match(samplesize.strip().replace(',',''))
 			newpoll['size'] = sampleresult.group('size')
@@ -81,9 +80,9 @@ for state,other,tab in pairs[:46]:
 			newpoll = dict()
 			newpoll['pollers'] = map(lambda x:x.strip(),row.xpath("td[1]/p/a/text()"))
 			newpoll['url'] = row.xpath("td[1]/p/a/@href")
-			newpoll['date struct'] = getDateSpan(row.xpath("td[2]/text()"))
-			print map(lambda x:x.strip(),row.xpath("td[1]/p/a/text()")),
-			print row.xpath("td[2]/text()")
+			dates = getDateSpan(row.xpath("td[2]/text()"))
+			newpoll['fromDate'] = dates.startDate
+			newpoll['toDate'] = dates.endDate
 			samplesize = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]/p")[0].itertext()))[0]
 			sampleresult = samplere.match(samplesize.strip().replace(',',''))
 			margininput = filter(lambda x:marginre.match(x.strip()),list(row.xpath("td[1]/p")[0].itertext()))
