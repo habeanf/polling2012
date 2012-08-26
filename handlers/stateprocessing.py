@@ -40,7 +40,7 @@ def getpollresults(row,isfirst):
 		republican = row.xpath("td[3]/text()|td[3]/a/text()|td[3]/a/b/text()|td[3]/b/a/text()|td[3]/b/text()")[0]
 		repubpct = row.xpath("td[4]/text()|td[4]/a/text()|td[4]/a/b/text()|td[4]/b/a/text()|td[4]/b/text()")[0]
 		leadmargin = row.xpath("td[5]/text()|td[5]/a/text()|td[5]/a/b/text()|td[5]/b/a/text()|td[5]/b/text()")[0]
-	return (democrat,float(demopct[:-1]),republican,float(repubpct[:-1]),float(leadmargin) if leadmargin not in ['Tie','Tied'] else 0.0)
+	return {'democrat':democrat,'democrat_pct':float(demopct[:-1]),'republican':republican,'republican_pct':float(repubpct[:-1]),'lead_margin':float(leadmargin) if leadmargin not in ['Tie','Tied'] else 0.0}
 
 
 def getpolls():
@@ -82,7 +82,7 @@ def getpolls():
 					newpoll['margin']=float(0)
 				polls.append(newpoll)
 				pollresults = getpollresults(row,True)
-				if pollresults[2] == 'Mitt Romney':
+				if pollresults['republican'] == 'Mitt Romney':
 					newpoll['results'] = pollresults
 			elif len(row.xpath("td/p/a|td/p/br"))>2:
 				newpoll = dict()
@@ -102,11 +102,11 @@ def getpolls():
 				newpoll['votertype'] = sampleresult.group('votertype')
 				polls.append(newpoll)
 				pollresults = getpollresults(row,True)
-				if pollresults[2] == 'Mitt Romney':
+				if pollresults['republican'] == 'Mitt Romney':
 					newpoll['results'] = pollresults			
 			else:
 				pollresults = getpollresults(row,False)
-				if pollresults[2] == 'Mitt Romney':
+				if pollresults['republican'] == 'Mitt Romney':
 					newpoll['results'] = pollresults
 
 
