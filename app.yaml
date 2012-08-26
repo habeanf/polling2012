@@ -25,6 +25,5 @@ handlers:
 - url: /
   script: handlers.home.app
 
-- url: /d3
-  static_files: handlers/d3demo.html
-  upload: handlers/d3demo.html
+- url: /api
+  script: handlers.api.app

@@ -2,12 +2,12 @@
 #coding: utf-8
 
 from lxml import etree
-import re
+import re,urllib2,logging
 from itertools import compress
 from pprint import pprint
-from dateprocessing import getDateSpan,DateFromTo
-import urllib2
 from StringIO import StringIO
+
+from dateprocessing import getDateSpan,DateFromTo
 
 url = 'http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012'
 
@@ -44,10 +44,12 @@ def getpollresults(row,isfirst):
 
 
 def getpolls():
+	logging.info('Getting poll info')
 	req = urllib2.Request(url, headers={'User-Agent' : "habeanf's single page scraper (please don't cut me off)"})
 
 	tree = etree.parse(StringIO(urllib2.urlopen(req).read()),etree.HTMLParser())
 
+	logging.info('Page retrieved')
 	states = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/h3")
 	other = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/p")[1:]
 	tables = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/table[@class='wikitable']|/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/div[@class='rellink boilerplate seealso']")
@@ -56,8 +58,10 @@ def getpolls():
 
 	stateresults=[]
 	for state,other,tab in pairs[:46]:
+
 		newstate = dict()
 		newstate['name']=state.xpath("span[@class='mw-headline']/a")[0].text
+		logging.debug('Parsing state: %s' % newstate['name'])
 		newstate['votes']=int(other.xpath("b[1]/text()")[0].split(' ')[0])
 		data = map(lambda x:getpcts(x[2:]),compress(other.xpath("text()"),[0,1,0,1]))
 		newstate['2004']=(other.xpath("a[1]/text()")[0].split(' ')[0],data[0])
