@@ -28,18 +28,12 @@ def getpollresults(row,isfirst):
 	republic = None
 	repubpct = None
 	leadmargin = None
-	if isfirst:
-		democrat = row.xpath("td[3]/text()|td[3]/a/text()|td[3]/a/b/text()|td[3]/b/a/text()|td[3]/b/text()")[0]
-		demopct = row.xpath("td[4]/text()|td[4]/a/text()|td[4]/a/b/text()|td[4]/b/a/text()|td[4]/b/text()")[0]
-		republican = row.xpath("td[5]/text()|td[5]/a/text()|td[5]/a/b/text()|td[5]/b/a/text()|td[5]/b/text()")[0]
-		repubpct = row.xpath("td[6]/text()|td[6]/a/text()|td[6]/a/b/text()|td[6]/b/a/text()|td[6]/b/text()")[0]
-		leadmargin = row.xpath("td[7]/text()|td[7]/a/text()|td[7]/a/b/text()|td[7]/b/a/text()|td[7]/b/text()")[0]
-	else:
-		democrat = row.xpath("td[1]/text()|td[1]/a/text()|td[1]/a/b/text()|td[1]/b/a/text()|td[1]/b/text()")[0]
-		demopct = row.xpath("td[2]/text()|td[2]/a/text()|td[2]/a/b/text()|td[2]/b/a/text()|td[2]/b/text()")[0]
-		republican = row.xpath("td[3]/text()|td[3]/a/text()|td[3]/a/b/text()|td[3]/b/a/text()|td[3]/b/text()")[0]
-		repubpct = row.xpath("td[4]/text()|td[4]/a/text()|td[4]/a/b/text()|td[4]/b/a/text()|td[4]/b/text()")[0]
-		leadmargin = row.xpath("td[5]/text()|td[5]/a/text()|td[5]/a/b/text()|td[5]/b/a/text()|td[5]/b/text()")[0]
+	indexshift = 2 if isfirst else 0
+	democrat = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (1+indexshift,1+indexshift,1+indexshift,1+indexshift,1+indexshift))[0]
+	demopct = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (2+indexshift,2+indexshift,2+indexshift,2+indexshift,2+indexshift))[0]
+	republican = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (3+indexshift,3+indexshift,3+indexshift,3+indexshift,3+indexshift))[0]
+	repubpct = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (4+indexshift,4+indexshift,4+indexshift,4+indexshift,4+indexshift))[0]
+	leadmargin = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (5+indexshift,5+indexshift,5+indexshift,5+indexshift,5+indexshift))[0]
 	return {'democrat':democrat,'democrat_pct':float(demopct[:-1]),'republican':republican,'republican_pct':float(repubpct[:-1]),'lead_margin':float(leadmargin) if leadmargin not in ['Tie','Tied'] else 0.0}
 
 
