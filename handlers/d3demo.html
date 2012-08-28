@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <script type="text/javascript" src="/static/d3.v2.js"></script>
     <style type="text/css">
 
 
@@ -15,9 +14,24 @@
           stroke: #000;
           shape-rendering: crispEdges;
         }
+        /*
+         * Socialite Look-a-like defaults
+         */
 
+        #social { display: block; list-style: none; padding: 0; margin: 20px; }
+        #social > li { display: block; margin: 0; padding: 10px; float: left; }
+        #social .socialite { display: block; position: relative; background: url('images/social-sprite.png') 0 0 no-repeat; }
+        #social .socialite-loaded { background: none !important; }
+
+        #social .twitter-share { width: 55px; height: 65px; background-position: 0 0; }
+        #social .googleplus-one { width: 50px; height: 65px; background-position: -75px 0; }
+        #social .facebook-like { width: 50px; height: 65px; background-position: -145px 0; }
+        #social .linkedin-share { width: 60px; height: 65px; background-position: -215px 0; }
+        #social .stumbleupon { width: 50px; height: 65px; background-position: -295px 0; }
     </style>
     <title>US Polling 2012</title>
+    <script type="text/javascript" src="/static/d3.v2.js"></script>
+
     <script type="text/javascript">
 
       var _gaq = _gaq || [];
@@ -29,7 +43,7 @@
         ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
         var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
       })();
-
+  
     </script>    
   </head>
     <body>
@@ -49,6 +63,33 @@
         http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012
         </a>
       </p>
+          <ul id="social" class="cf">
+        <li>
+            <a href="http://twitter.com/share" class="socialite twitter-share" data-via="habeanf" data-text="US&nbsp;Polling&nbsp;2012" data-url="http://uspolling2012.appspot.com/" data-count="vertical" rel="nofollow" target="_blank">
+                <span class="vhidden">Share on Twitter</span>
+            </a>
+        </li>
+        <li>
+            <a href="https://plusone.google.com/_/+1/confirm?hl=en&amp;url==http://uspolling2012.appspot.com/" class="socialite googleplus-one" data-size="tall" data-href="=http://uspolling2012.appspot.com/" rel="nofollow" target="_blank">
+                <span class="vhidden">Share on Google+</span>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.facebook.com/sharer.php?u=http://uspolling2012.appspot.com/&amp;t=US&nbsp;Polling&nbsp;2012" class="socialite facebook-like" data-href="http://uspolling2012.appspot.com/" data-send="false" data-layout="box_count" data-width="60" data-show-faces="false" rel="nofollow" target="_blank">
+                <span class="vhidden">Share on Facebook</span>
+            </a>
+        </li>
+        <li>
+            <a href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http://uspolling2012.appspot.com/&amp;title=US&nbsp;Polling&nbsp;2012" class="socialite linkedin-share" data-url="http://uspolling2012.appspot.com/" data-counter="top" rel="nofollow" target="_blank">
+                <span class="vhidden">Share on LinkedIn</span>
+            </a>
+        </li>
+        <li>
+            <a href="http://pinterest.com/pin/create/button/?url=http://uspolling2012.appspot.com/&amp;description=US&nbsp;Polling&nbsp;2012" class="socialite pinterest-pinit" data-count-layout="vertical">
+                <span class="vhidden">Pin It!</span>
+            </a>
+        </li>
+    </ul>
     	<script type="text/javascript">
     	var data                = {{data}};
       var preferences         = {LVRV:'LV',polltype:-1};
@@ -362,6 +403,31 @@
         .duration(duration)
         .attr("d",function(d) { return area(d.values);})
         .attr("fill", function (d, i) { return z(i); });
+      }
+      window._socialite = window._socialite || [];
+      window._socialite.push(function()
+      {
+          // add pinterest extension
+          (function(a,b,c,d){c.network("pinterest",{script:{src:"//assets.pinterest.com/js/pinit.js"}}),c.widget("pinterest","pinit",{process:function(a){if(a.el.nodeName.toLowerCase()!=="a")return!0;var b="socialite-instance-"+a.uid,c=a.el.getAttribute("href");a.el.id=b,a.el.href="#"+b,a.el.setAttribute("data-default-href",c),a.el.setAttribute("onclick",'(function(){window.open("'+c+'")})();')},init:function(a){c.processInstance(a);var d=b.createElement("a");d.className="pin-it-button",c.copyDataAttributes(a.el,d),d.setAttribute("href",a.el.getAttribute("data-default-href")),d.setAttribute("count-layout",a.el.getAttribute("data-count-layout")||"horizontal"),a.el.appendChild(d),c.networkReady("pinterest")&&c.reloadNetwork("pinterest")}})})(window,window.document,window.Socialite);
+
+          Socialite.load(document.getElementById('social'));
+          Socialite.activate(document.getElementById('follow-button'), 'twitter-follow');
+      });
+
+      var docReady = function()
+      {
+          var s  = document.getElementsByTagName('script')[0],
+              js = document.createElement('script');
+          js.type = 'text/javascript';
+          js.async = true;
+          js.src = '/static/socialite.min.js';
+          s.parentNode.insertBefore(js, s);
+      };
+
+      if (typeof window.addEventListener === 'function') {
+          window.addEventListener('DOMContentLoaded', docReady, false);
+      } else {
+          window.onload = function() { docReady(); };
       }
 
     	</script>
