@@ -1,14 +1,14 @@
 #!/usr/bin/python
 #coding: utf-8
 
-from lxml import etree
 import re,urllib2,logging
+from lxml import etree
 from itertools import compress
 from pprint import pprint
 from StringIO import StringIO
 
 from dateprocessing import getDateSpan,DateFromTo
-from time import gmtime
+from model.objects import Poll
 
 url = 'http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012'
 
@@ -111,4 +111,4 @@ def getpolls():
 
 		newstate['polls']=polls
 		stateresults.append(newstate)
-	return stateresults,gmtime()
+	Poll(id='us_state_2012',poll=stateresults).put()

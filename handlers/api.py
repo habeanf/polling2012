@@ -1,19 +1,23 @@
 from google.appengine.api import memcache
-import webapp2,json
+import webapp2,logging
 
 from stateprocessing import getpolls
 from datejsondecoder import dumps
-
-CACHE_KEY = 'results'
+from model.objects import Poll
 
 class ApiPage(webapp2.RequestHandler):
 	def get(self):
-		data = memcache.get(CACHE_KEY)
-		if not data:
-			pollinfo = getpolls()
-			data = dumps(pollinfo)
-			memcache.set(CACHE_KEY,data)
+		pollobj = Poll.get_by_id('us_state_2012')
+		if not pollobj:
+			logging.info('Poll does not exist')
+			getpolls()
+			pollobj = Poll.get_by_id('us_state_2012')
+			if pollobj is None:
+				raise Exception("Poll not found")
+		else:
+			logging.info('Poll found')
+
 		self.response.headers['Content-Type'] = 'application/json'
-		self.response.out.write(data)
+		self.response.out.write(dumps(pollobj.poll))
 
 app = webapp2.WSGIApplication([('/api',ApiPage)],debug=True)

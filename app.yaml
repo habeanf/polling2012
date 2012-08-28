@@ -26,8 +26,15 @@ handlers:
 - url: /static
   static_dir: static
 
+- url: /images
+  static_dir: static/images
+
 - url: /
   script: handlers.home.app
 
 - url: /api
   script: handlers.api.app
+
+- url: /refresh
+  script: handlers.home.app
+  login: admin
