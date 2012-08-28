@@ -8,6 +8,7 @@ from pprint import pprint
 from StringIO import StringIO
 
 from dateprocessing import getDateSpan,DateFromTo
+from time import gmtime
 
 url = 'http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012'
 
@@ -110,4 +111,4 @@ def getpolls():
 
 		newstate['polls']=polls
 		stateresults.append(newstate)
-	return stateresults
+	return stateresults,gmtime()

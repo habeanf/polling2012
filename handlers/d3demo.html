@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <script type="text/javascript" src="/static/d3.js"></script>
+    <script type="text/javascript" src="/static/d3.v2.js"></script>
     <style type="text/css">
 
 
@@ -17,8 +17,14 @@
         }
 
     </style>
+    <title>US Polling 2012</title>
   </head>
     <body>
+      <h1>2012 Presidential Elections</h1>
+      <h2>US Statewide Polling</h2>
+      <h3>Last Update: {{lastupdate}}</h3>
+      <svg class="graphsvg"></svg>
+      <p>Red - Romney / Ryan <br/>Blue - Obama / Biden</p>
     	<script type="text/javascript">
     	var data                = {{data}};
       var preferences         = {LVRV:'LV',polltype:-1};
@@ -281,7 +287,7 @@
           .y0(function(d) { return y(d.y0); })
           .y1(function(d) { return y(d.y0 + d.y); });
 
-      var svg = d3.select("body").append("svg")
+      var svg = d3.select(".graphsvg")
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
         .append("g")
