@@ -30,7 +30,6 @@
       var preferences         = {LVRV:'LV',polltype:-1};
       var SWING_MARGIN_PCT    = 6;
       var POLL_DEFAULT_MARGIN = 4;
-      var ISOSUFFIX           = "T00:00:00";
       var UNKNOWN_STATES      =
       [{name:'Alaska',votes:3,polls:[],
         2004:['Republican',[61.1,35.5]],
@@ -60,12 +59,18 @@
           return prev.concat(curr.values);
         },[]);
       }
+      var internalDateFormat = d3.time.format("%Y-%m-%d");
+      function getData(dateString) {
+        var dateSplit = dateString.split('-');
+        //return new Date(Date.UTC(parseInt(dateSplit[0]),parseInt(dateSplit[1]),parseInt(dateSplit[2]),-2,0,0));
+        return internalDateFormat.parse(dateString);
+      }
 
       // parse date objects for later use; new Date(x) expects can parse x if x is isoformat (YYYY-MM-DD...)
       data.forEach(function (state) {
         state.polls.forEach(function (poll) {
-          poll.fromDate = new Date(poll.fromDate + ISOSUFFIX);
-          poll.toDate   = new Date(poll.toDate + ISOSUFFIX);
+          poll.fromDate = getData(poll.fromDate);
+          poll.toDate   = getData(poll.toDate);;
         });
       });
 
@@ -162,7 +167,7 @@
                             outcome:pollOutcome,value:stateData.votes});
             
             return newResult;
-        },[{state:stateData.name,date:new Date('2012-01-01T00:00:00'),
+        },[{state:stateData.name,date:getData('2012-01-01'),
             outcome:stateData.apriori,value:stateData.votes}]) 
         return extendLastPoll(dailyData,new Date());
       }
@@ -214,7 +219,7 @@
               var newprevious = prev.concat(interpolated_blank);              
               newprevious.push(curr);
               return newprevious;
-          },[{date:new Date("2011-12-31"+ISOSUFFIX),value:0,key:outcome.key}]).splice(1);
+          },[{date:getData("2011-12-31"),value:0,key:outcome.key}]).splice(1);
 
           // pad the end
           var last = outcome.values.slice(-1)[0];
