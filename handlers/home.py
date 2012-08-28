@@ -6,6 +6,11 @@ from time import gmtime, strftime
 from stateprocessing import getpolls
 from datejsondecoder import dumps
 
+try: 
+    from local_settings import ga_id
+except ImportError:
+    ga_id = ''
+
 CACHE_KEY = 'results'
 UPDATE_TIME = 'lasttime'
 
@@ -27,7 +32,8 @@ class MainPage(webapp2.RequestHandler):
 
 		template_values = {
 			'data': data,
-			'lastupdate': strftime("%a, %d %b %Y %H:%M:%S +0000", lastupdate)
+			'lastupdate': strftime("%a, %d %b %Y %H:%M:%S +0000", lastupdate),
+			'ga_id': ga_id
 		}
 
 		template = jinja_environment.get_template('d3demo.html')
