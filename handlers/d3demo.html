@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <script type="text/javascript" src="/static/d3.js"></script>
     <style type="text/css">
 
-        svg {
-          font-family: "Helvetica Neue", Helvetica;
+
+        body {
+          font: 10px sans-serif;
         }
 
-        .line {
+        .axis path, .axis line {
           fill: none;
           stroke: #000;
-          stroke-width: 2px;
+          shape-rendering: crispEdges;
         }
 
     </style>
@@ -19,17 +21,40 @@
     <body>
     	<script type="text/javascript">
     	var data                = {{data}};
-      var preferences         = {LVRV:'LV'};
+      var preferences         = {LVRV:'LV',polltype:-1};
       var SWING_MARGIN_PCT    = 6;
       var POLL_DEFAULT_MARGIN = 4;
       var ISOSUFFIX           = "T00:00:00";
-
+      var UNKNOWN_STATES      =
+      [{name:'Alaska',votes:3,polls:[],
+        2004:['Republican',[61.1,35.5]],
+        2008:['Republican',[59.4,37.9]]},
+       {name:'Delaware',votes:3,polls:[],
+        2004:['Democratic',[53.4,45.8]],
+        2008:['Democratic',[61.9,36.9]]},
+       {name:'DC',votes:3,polls:[],
+        2004:['Democratic',[89,9]],
+        2008:['Democratic',[92.46,6.53]]},
+       {name:'Idaho',votes:4,polls:[],
+        2004:['Republican',[68.4,30.3]],
+        2008:['Republican',[61.3,36]]},
+       {name:'Wyoming',votes:3,polls:[],
+        2004:['Republican',[68.9,29.1]],
+        2008:['Republican',[64.8,32.5]]}];
+        
       // bahhh how does Math not have sign builtin?
       _sign = function(x) {
         if (x < 0) return -1;
         if (x > 0) return  1;
         return 0;
       }
+
+      function flatten(nested) {
+        return nested.reduce(function (prev,curr) {
+          return prev.concat(curr.values);
+        },[]);
+      }
+
       // parse date objects for later use; new Date(x) expects can parse x if x is isoformat (YYYY-MM-DD...)
       data.forEach(function (state) {
         state.polls.forEach(function (poll) {
@@ -71,7 +96,8 @@
 
       // TODO: need to use preferences to choose polls
       function choosePoll(polls) {
-        return polls[0].values[0];
+        var allpolls = flatten(polls)
+        return allpolls.slice(preferences.polltype)[0];
       }
 
       // some states have multiple polls ending on the same day
@@ -126,15 +152,18 @@
             var pollOutcome = currentPoll.outcome;
 
             var newResult = extendLastPoll(previousResults,pollDate);
-            newResult.push({state:stateData.name,date:pollDate,outcome:pollOutcome,value:stateData.votes});
+            newResult.push({state:stateData.name,date:pollDate,
+                            outcome:pollOutcome,value:stateData.votes});
+            
             return newResult;
-        },[{state:stateData.name,date:new Date('2012-01-01T00:00:00'),outcome:stateData.apriori,value:stateData.votes}]) 
+        },[{state:stateData.name,date:new Date('2012-01-01T00:00:00'),
+            outcome:stateData.apriori,value:stateData.votes}]) 
         return extendLastPoll(dailyData,new Date());
       }
 
       // generate the timelines of all states
       function generateStateData() {
-        return data.map(function (state) {return generateDaily(state);});
+        return data.concat(UNKNOWN_STATES).map(function (state) {return generateDaily(state);});
       }
 
       // aggregate by category from the state timelines
@@ -153,66 +182,152 @@
             outComeDay.value = outComeDay.values.reduce(function (previous,current) {
                                                           return previous+current.value;
                                                         },0);
-            delete outComeDay['values'];
+            //console.log("For")
           });
 
           // fill in missing days
-          // step 1: sort
+          //  step 1: sort
           outcome.values.sort(function (day1,day2) {
             return _sign((new Date(day1.key)) - (new Date(day2.key)));
           });
 
-          // step 2: fill in the blanks
+          //  step 2: fill in the blanks
           outcome.values = outcome.values.reduce(
             function (prev,curr) {
               var last = prev.slice(-1)[0];
-              var interpolated_blank = d3.time.days( d3.time.day.offset(new Date(last.key),1),
-                                                     new Date(curr.key))
+              curr['date'] = new Date(curr.key);              
+              curr['key']=outcome.key;
+              var interpolated_blank = d3.time.days( d3.time.day.offset(
+                                                        new Date(last.date),1),
+                                                     new Date(curr.date))
                                               .map(function (d) {
-                                                  return {key:d.toString(),
-                                                          value:last.value};
+                                                  return {key:outcome.key,
+                                                          date:d,
+                                                          value:0};
                                                 });
-              var newprevious = prev.concat(interpolated_blank);
+              var newprevious = prev.concat(interpolated_blank);              
               newprevious.push(curr);
               return newprevious;
-          },[{key:"2011-12-31"+ISOSUFFIX,value:0}]).splice(1);
+          },[{date:new Date("2011-12-31"+ISOSUFFIX),value:0,key:outcome.key}]).splice(1);
 
           // pad the end
           var last = outcome.values.slice(-1)[0];
-          var lastDate = new Date(last.key);
+          var lastDate = last.date;
           var today = new Date();
           var interpolated_end = d3.time.days(d3.time.day.offset(lastDate,1),
                                               d3.time.day.offset(today,-1))
                                         .map(function (d) {
-                                          return {key:d.toString(),
-                                                  value:last.value};
+                                          return {date:d,
+                                                  value:last.value,
+                                                  key:outcome.key};
                                         });
           outcome.values.concat(interpolated_end);
         });
         return nestedByPollDayResult;
       }
 
-    	var xAxis = [];
-    	var today = new Date();
-    	for (var x=1; x<61; x++){
-    		var daDate = new Date( today - 86400000 * x );
-    		xAxis.push( [daDate.getFullYear(),daDate.getMonth()+1,daDate.getDate()].join('/') );
-    	}
-    	yAxis = {
-    		DemocratsAssured : "Democrats Assured",
-    		DemocratsHanging : "Democrats Hanging",
-    		DemocratesDispute : "Democrats Disputed",
-    		Disputed : "Disputed",
-    		RepublicanDispute : "Republicans Disputed",
-    		RepublicansHanging: "Republicans Hanging",
-    		RepublicansAssured : "Republicans Assured"
-    	}
-
-    	var totalWeights = 538;
-    	
+      var stack = d3.layout.stack()
+          .offset("zero")
+          .values(function(d) { return d.values; })
+          .x(function(d) { return d.date; })
+          .y(function(d) { return d.value; });
 
 
+      function calculateData() {
+        sdata = generateCategoryData();
 
+        var sortorder   = { 'Republican Safe':5,
+                            'Republican Swing':4,
+                            'Unknown':3,
+                            'Democratic Swing':2,
+                            'Democratic Safe':1
+                          };
+        sdata.sort(function (l,r) {
+          return _sign(sortorder[l.key]-sortorder[r.key]);
+        });
+        
+        fdata = flatten(sdata);
+        layers = stack(sdata);
+
+      }
+      calculateData();
+
+      var margin = {top: 20, right: 30, bottom: 30, left: 40},
+          width = 960 - margin.left - margin.right,
+          height = 500 - margin.top - margin.bottom;
+
+      var x = d3.time.scale()
+          .range([0, width]);
+
+      var y = d3.scale.linear()
+          .range([height, 0]);
+
+      var z = d3.scale.ordinal()
+          .range(['#3182bd','#6baed6','#dddddd','#fdae6b','#e6550d' ]);
+
+      var yAxis = d3.svg.axis()
+          .scale(y)
+          .orient("left")
+          .tickValues([135,270,403,538]);
+
+      var yAxis2 = d3.svg.axis()
+          .scale(y)
+          .orient("right")
+          .tickValues([135,270,403,538]);
+
+      var area = d3.svg.area()
+          .interpolate("cardinal")
+          .x(function(d) { return x(d.date); })
+          .y0(function(d) { return y(d.y0); })
+          .y1(function(d) { return y(d.y0 + d.y); });
+
+      var svg = d3.select("body").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      x.domain(d3.extent(fdata, function(d) { return d.date; }));
+      y.domain([0, d3.max(fdata, function(d) { return d.y0 + d.y; })]);
+
+
+      var xAxis = d3.svg.axis()
+          .scale(x)
+          .orient("bottom")
+          .ticks(d3.time.months);
+
+      svg.selectAll(".layer")
+          .data(layers)
+        .enter().append("path")
+          .attr("class", "layer")
+          .attr("d", function(d) { return area(d.values); })
+          .style("fill", function(d, i) { return z(i); });
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
+
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis);
+      
+      svg.append("g")
+          .attr("class", "y axis")
+          .attr("transform", "translate(" + width + ",0)")
+          .call(yAxis2);
+      
+      function transition() {
+        preferences.polltype=preferences.polltype*-1 - 1;
+        duration = 1500;
+        calculateData();
+        d3.selectAll(".layer")
+        .data(layers)
+        .transition()
+        .duration(duration)
+        .attr("d",function(d) { return area(d.values);})
+        .attr("fill", function (d, i) { return z(i); });
+      }
 
     	</script>
     </body>
