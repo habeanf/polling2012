@@ -34,8 +34,8 @@ def getpollresults(row,isfirst):
 	demopct = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (2+indexshift,2+indexshift,2+indexshift,2+indexshift,2+indexshift))[0]
 	republican = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (3+indexshift,3+indexshift,3+indexshift,3+indexshift,3+indexshift))[0]
 	repubpct = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (4+indexshift,4+indexshift,4+indexshift,4+indexshift,4+indexshift))[0]
-	leadmargin = row.xpath("td[%d]/text()|td[%d]/a/text()|td[%d]/a/b/text()|td[%d]/b/a/text()|td[%d]/b/text()" % (5+indexshift,5+indexshift,5+indexshift,5+indexshift,5+indexshift))[0]
-	return {'democrat':democrat,'democrat_pct':float(demopct[:-1]),'republican':republican,'republican_pct':float(repubpct[:-1]),'lead_margin':float(leadmargin) if leadmargin not in ['Tie','Tied'] else 0.0}
+	leadmargin = float(repubpct[:-1])-float(demopct[:-1])
+	return {'democrat':democrat,'democrat_pct':float(demopct[:-1]),'republican':republican,'republican_pct':float(repubpct[:-1]),'lead_margin':float(leadmargin) if abs(leadmargin)>0 else 0.0}
 
 
 def getpolls():
@@ -73,7 +73,7 @@ def getpolls():
 				samplesize = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))[0]
 				sampleresult = samplere.match(samplesize.strip().replace(',',''))
 				newpoll['size'] = sampleresult.group('size')
-				newpoll['votertype'] = sampleresult.group('votertype')
+				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
 				margininput = filter(lambda x:marginre.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))
 				if len(margininput)>0:
 					newpoll['margin']=float(marginre.match(margininput[0].strip()).group('margin'))
@@ -98,7 +98,7 @@ def getpolls():
 				else:
 					newpoll['margin']=float(0)
 				newpoll['size'] = sampleresult.group('size')
-				newpoll['votertype'] = sampleresult.group('votertype')
+				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
 				polls.append(newpoll)
 				pollresults = getpollresults(row,True)
 				if pollresults['republican'] == 'Mitt Romney':

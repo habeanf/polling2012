@@ -48,12 +48,29 @@
           http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012
           </a>
         </p>
+        <div id="preferences">
+          <h5>Preferences</h5>
+          <span id="LVRV" ><a href="http://politicalticker.blogs.cnn.com/2010/10/05/poll-watch-difference-between-likely-voters-and-registered-voters-key/">Polled Voter Types</a>
+            <br/>
+            Use:
+            <input id="LVRV_LV" name="LVRV" value="LV" type="checkbox" checked onclick="LVRVuse('LV');">LV</input>
+            <input id="LVRV_RV" name="LVRV" value="RV" type="checkbox" checked onclick="LVRVuse('RV');">RV</input>
+            <input id="LVRV_UK" name="LVRV" value="UK" type="checkbox" checked onclick="LVRVuse('UK');">Unknown</input><!--
+            <br/>
+            Multiple Polls of Different Voter Types:
+            <input name="LVRVchoice" value="LV" type="radio" value="LV" checked  onclick="LVRVuse('LV');>LV > RV</input>
+            <input name="LVRVchoice" value="RV" type="radio" value="RV"  onclick="LVRVuse('RV');>RV > LV</input>
+            <input name="LVRVchoice" value="AVG" type="radio" value="AVG" onclick="LVRVuse('AVG');">Average</input>-->
+          </span>
+        </div>
     </center>
   	<script type="text/javascript">
     	var data                = {{data}};
-      var preferences         = {LVRV:'LV',polltype:-1};
-      var SWING_MARGIN_PCT    = 6;
-      var POLL_DEFAULT_MARGIN = 4;
+      preferences             = {votertypes:{use:{'LV':true,'RV':true,'UK':true},
+                                             choice:'LV',
+                                             otherwise:'average'},
+                                 blacklist_pollers:[],
+                                 whitelist_pollers:[]};
       var UNKNOWN_STATES      =
       [{name:'Alaska',votes:3,polls:[],
         2004:['Republican',[61.1,35.5]],
@@ -75,11 +92,12 @@
           // parse date objects for later use; new Date(x) expects can parse x if x is isoformat (YYYY-MM-DD...)
           data.forEach(function (state) {
             state.polls.forEach(function (poll) {
-              poll.fromDate = getData(poll.fromDate);
-              poll.toDate   = getData(poll.toDate);;
+              poll.fromDate = getDate(poll.fromDate);
+              poll.toDate   = getDate(poll.toDate);;
             });
           });
         
+          getLVRVuseprefs();
           calculateData();
           margin = {top: 20, right: 30, bottom: 30, left: 40},
           width = 720 - margin.left - margin.right,

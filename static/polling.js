@@ -1,3 +1,6 @@
+var SWING_MARGIN_PCT    = 6;
+var POLL_DEFAULT_MARGIN = 4;
+
 // bahhh how does Math not have sign builtin?
 _sign = function(x) {
   if (x < 0) return -1;
@@ -11,7 +14,7 @@ function flatten(nested) {
   },[]);
 }
 var internalDateFormat = d3.time.format("%Y-%m-%d");
-function getData(dateString) {
+function getDate(dateString) {
   var dateSplit = dateString.split('-');
   //return new Date(Date.UTC(parseInt(dateSplit[0]),parseInt(dateSplit[1]),parseInt(dateSplit[2]),-2,0,0));
   return internalDateFormat.parse(dateString);
@@ -33,11 +36,11 @@ function calculateStateApriori(state) {
 function calculatePollOutcome(poll) {
   var pollValue = 'Unknown';
   var margin    = poll.margin || POLL_DEFAULT_MARGIN;
-  var swing     = poll.results.lead_margin < margin;
+  var swing     = Math.abs(poll.results.lead_margin) < margin;
   var winner    = 'Unknown';
-  if (poll.results.republican_pct>poll.results.democrat_pct)
+  if (poll.results.lead_margin>0)
       winner = 'Republican';
-  if (poll.results.republican_pct<poll.results.democrat_pct)
+  if (poll.results.lead_margin<0)
       winner = 'Democratic';
   if (winner != 'Unknown') {
       pollValue = winner;
@@ -49,9 +52,64 @@ function calculatePollOutcome(poll) {
   poll.outcome = pollValue;
 }
 
-// TODO: need to use preferences to choose polls
+// TODO: need to use finish using preferences to choose polls
 function choosePoll(polls) {
-  var allpolls = flatten(polls)
+  var allpolls      = polls.reduce(function (prev,curr) {
+    return prev.concat(curr);
+  },[]);
+  // stores all removed polls
+  var removedpolls  = [];
+  var avgpolls      = [];
+
+  // choose by voter type
+  var nestedByVoterType = d3.nest().key(function (d) {return d.votertype;})
+                                   .entries(allpolls);
+  var nestedallpolls=nestedByVoterType.filter(function (pollgrp) {
+    var result = preferences.votertypes.use[pollgrp.key];
+    if (!result) {
+      removedpolls.concat(pollgrp.values);
+    }
+    return result;
+  });
+
+  // need to choose or average
+  // if (nestedallpolls.length>1) {
+  //   var choicepref = preferences.votertypes.choice;
+  //   if (choicepref == 'RV') {
+  //     delete nestedallpolls['LV'];
+  //   }
+  //   if (choicepref == 'LV') {
+  //     delete nestedallpolls['RV'];
+  //   }
+  // }    
+  // flatten remaining polls
+  var polllist = nestedallpolls.reduce(function (prev,curr) {
+    return prev.concat(curr.values);
+  },[]);
+
+  if (polllist.length>1) {
+    avgpolls=polllist;
+    var avglead   = d3.mean(polllist,function(poll) {return poll.results.lead_margin;});
+    var aggerror  = d3.round(
+                      Math.sqrt(
+                        d3.sum(polllist,
+                          function(poll) {
+                            return Math.pow(poll.margin,2);
+                          })
+                        ),2); 
+    allpolls = [{ margin:aggerror,
+                  toDate:polllist[0].toDate,
+                  results:{ 
+                    democrat:polllist[0].results.democrat,
+                    republican:polllist[0].results.republican,
+                    lead_margin:avglead}}];
+  } else {
+    allpolls = polllist;
+  }
+  if (removedpolls.length>1) {
+  }
+  if (avgpolls.length>1) {
+  }
   return allpolls.slice(preferences.polltype)[0];
 }
 
@@ -61,22 +119,17 @@ function choosePoll(polls) {
 // - Different pollers (e.g. Rasmussen vs Gallup)
 // if they have different outcomes, we should choose one (since each outcome has it's own bucket)
 function processPolls(stateData) {
-  stateData.polls.forEach(calculatePollOutcome)
   var nestedByEndDay  = d3.nest()
                           .key(function (poll) {return poll.toDate;})
-                          .key(function (poll) {return poll.outcome;})
                           .entries(stateData.polls);
   nestedByEndDay.forEach(function(polledday) {
-    if (polledday.values.length>1) {
-      // there are indeed multiple polls for the same day
-      // if they have different outcomes, we need to choose one
-      polledday.result = choosePoll(polledday.values);
+    polledday.result = choosePoll(polledday.values);
+    if(polledday.result != undefined) {
+      calculatePollOutcome(polledday.result);
     }
-    else
-      polledday.result = polledday.values[0].values[0];
   });
-
   return nestedByEndDay
+          .filter(function (dayData) {return dayData.result != undefined})
           .map(function (dayData) {return dayData.result})
           .sort(function (poll1,poll2) {
             return _sign(poll1.toDate-poll2.toDate);
@@ -111,7 +164,7 @@ function generateDaily(stateData) {
                       outcome:pollOutcome,value:stateData.votes});
       
       return newResult;
-  },[{state:stateData.name,date:getData('2012-01-01'),
+  },[{state:stateData.name,date:getDate('2012-01-01'),
       outcome:stateData.apriori,value:stateData.votes}]) 
   return extendLastPoll(dailyData,new Date());
 }
@@ -137,7 +190,6 @@ function generateCategoryData() {
       outComeDay.value = outComeDay.values.reduce(function (previous,current) {
                                                     return previous+current.value;
                                                   },0);
-      //console.log("For")
     });
 
     // fill in missing days
@@ -163,7 +215,7 @@ function generateCategoryData() {
         var newprevious = prev.concat(interpolated_blank);              
         newprevious.push(curr);
         return newprevious;
-    },[{date:getData("2011-12-31"),value:0,key:outcome.key}]).splice(1);
+    },[{date:getDate("2011-12-31"),value:0,key:outcome.key}]).splice(1);
 
     // pad the end
     var last = outcome.values.slice(-1)[0];
@@ -173,10 +225,13 @@ function generateCategoryData() {
                                         d3.time.day.offset(today,-1))
                                   .map(function (d) {
                                     return {date:d,
-                                            value:last.value,
+                                            value:0,
                                             key:outcome.key};
                                   });
-    outcome.values.concat(interpolated_end);
+    outcome.values = outcome.values.concat(interpolated_end);
+    outcome.values = outcome.values.slice(0,
+      d3.time.days(getDate("2012-01-01"),
+                   d3.time.day.offset(today,-1)).length);
   });
   return nestedByPollDayResult;
 }
@@ -190,13 +245,22 @@ stack = d3.layout.stack()
 
 function calculateData() {
   sdata = generateCategoryData();
-
-  var sortorder   = { 'Republican Safe':5,
+  var sortorder   = { 'Republican Safe':5, 
                       'Republican Swing':4,
                       'Unknown':3,
                       'Democratic Swing':2,
                       'Democratic Safe':1
                     };
+  for (var datatype in sortorder) {
+    if (sdata.filter(function (d) {return d.key==datatype;}).length==0) {
+      var newarray = {};
+      newarray.key = datatype;
+      newarray.values = sdata[0].values.map(function (el) {
+        return {date:el.date,key:datatype,value:0};
+      });
+      sdata.push(newarray);
+    }
+  }
   sdata.sort(function (l,r) {
     return _sign(sortorder[l.key]-sortorder[r.key]);
   });
@@ -206,9 +270,23 @@ function calculateData() {
 
 }
 
+function getLVRVuseprefs() {
+  preferences.votertypes.use.RV = document.getElementById("LVRV_RV").checked;  
+  preferences.votertypes.use.LV = document.getElementById("LVRV_LV").checked;  
+  preferences.votertypes.use.UK = document.getElementById("LVRV_UK").checked;    
+}
+
+function LVRVuse(choicetype) {
+  getLVRVuseprefs();
+  transition();
+}
+
+function LVRVchoice(choicetype) {
+  preferences.votertypes.choice=choicetype;
+  transition();
+}
 
 function transition() {
-  preferences.polltype=preferences.polltype*-1 - 1;
   duration = 1500;
   calculateData();
   d3.selectAll(".layer")
