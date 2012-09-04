@@ -14,7 +14,7 @@ url = 'http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_Sta
 
 pctre = re.compile('(\d+|\d+\.\d+)\%.(\d+|\d+\.\d+)\%')
 
-samplere = re.compile('.*Sample size: ?(?P<size>Varies|\d+)-?\d* ?(?P<votertype>LV|RV)? ?.*')
+samplere = re.compile('.*Sample size: ?(?P<size>Varies|\d+|n\/a)-?\d* ?(?P<votertype>LV|RV)? ?.*')
 
 marginre = re.compile('.*Margin of error(: .| .* )(?P<margin>\d+|\d+.\d+)%.*')
 
@@ -53,7 +53,6 @@ def getpolls():
 
 	stateresults=[]
 	for state,other,tab in pairs[:46]:
-
 		newstate = dict()
 		newstate['name']=state.xpath("span[@class='mw-headline']/a")[0].text
 		logging.debug('Parsing state: %s' % newstate['name'])
@@ -62,7 +61,7 @@ def getpolls():
 		newstate['2004']=(other.xpath("a[1]/text()")[0].split(' ')[0],data[0])
 		newstate['2008']=(other.xpath("a[2]/text()")[0].split(' ')[0],data[1])
 		polls = []
-		for row in tab.xpath("tr")[1:]:
+		for i,row in enumerate(tab.xpath("tr")[1:]):
 			if len(row.xpath("td/a|td/br"))>2:
 				newpoll = dict()
 				newpoll['pollers'] = map(lambda x:x.strip(),row.xpath("td[1]/a/text()"))
@@ -74,6 +73,8 @@ def getpolls():
 				sampleresult = samplere.match(samplesize.strip().replace(',',''))
 				newpoll['size'] = sampleresult.group('size')
 				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
+				if newpoll['votertype'] in ['n/a']:
+					newpoll['votertype'] = 'UK'
 				margininput = filter(lambda x:marginre.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))
 				if len(margininput)>0:
 					newpoll['margin']=float(marginre.match(margininput[0].strip()).group('margin'))
@@ -99,7 +100,9 @@ def getpolls():
 					newpoll['margin']=float(0)
 				newpoll['size'] = sampleresult.group('size')
 				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
-				polls.append(newpoll)
+				if newpoll['votertype'] in ['n/a']:
+					newpoll['votertype'] = 'UK'
+					polls.append(newpoll)
 				pollresults = getpollresults(row,True)
 				if pollresults['republican'] == 'Mitt Romney':
 					newpoll['results'] = pollresults			
