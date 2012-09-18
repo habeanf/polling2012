@@ -26,7 +26,7 @@ regex = re.compile( regexStr.replace('\n','') )
 monthsText = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 #print( regex.search( dates[0][0].replace(' ','') ).groups()[0] )
 def cleanStr(astr):
-	return astr.replace(' ','').encode('utf8').replace('–','-').encode('ascii')
+	return astr.replace(' ','').replace(u'\xe2\x80\x93','-').encode('utf8').replace('–','-').encode('ascii')
 
 def getDateSpan(x):
 	s = cleanStr(x[0])

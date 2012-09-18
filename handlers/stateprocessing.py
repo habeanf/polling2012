@@ -12,7 +12,7 @@ from model.objects import Poll
 
 url = 'http://en.wikipedia.org/wiki/Statewide_opinion_polling_for_the_United_States_presidential_election,_2012'
 
-pctre = re.compile('(\d+|\d+\.\d+)\%.(\d+|\d+\.\d+)\%')
+pctre = re.compile('(\d+|\d+\.\d+)\%.+(\d+|\d+\.\d+)\%')
 
 samplere = re.compile('.*Sample size: ?(?P<size>Varies|\d+|n\/a)-?\d* ?(?P<votertype>LV|RV)? ?.*')
 
@@ -46,7 +46,7 @@ def getpolls():
 
 	logging.info('Page retrieved')
 	states = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/h3")
-	other = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/p")[1:]
+	other = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/p")[3:]
 	tables = tree.xpath("/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/table[@class='wikitable']|/html/body/div[@id='content']/div[@id='bodyContent']/div[@id='mw-content-text']/div[@class='rellink boilerplate seealso']")
 
 	pairs = zip(states,other,tables)
@@ -55,24 +55,31 @@ def getpolls():
 	for state,other,tab in pairs[:46]:
 		newstate = dict()
 		newstate['name']=state.xpath("span[@class='mw-headline']/a")[0].text
-		logging.debug('Parsing state: %s' % newstate['name'])
+		logging.info('Parsing state: %s' % newstate['name'])
 		newstate['votes']=int(other.xpath("b[1]/text()")[0].split(' ')[0])
 		data = map(lambda x:getpcts(x[2:]),compress(other.xpath("text()"),[0,1,0,1]))
 		newstate['2004']=(other.xpath("a[1]/text()")[0].split(' ')[0],data[0])
 		newstate['2008']=(other.xpath("a[2]/text()")[0].split(' ')[0],data[1])
 		polls = []
 		for i,row in enumerate(tab.xpath("tr")[1:]):
+			logging.info('At row %d' % i)
 			if len(row.xpath("td/a|td/br"))>2:
 				newpoll = dict()
 				newpoll['pollers'] = map(lambda x:x.strip(),row.xpath("td[1]/a/text()"))
 				newpoll['url'] = row.xpath("td[1]/a/@href")
+				logging.info('Parsing date %s' % row.xpath("td[2]/text()")[0])
 				dates = getDateSpan(row.xpath("td[2]/text()"))
 				newpoll['fromDate'] = dates.startDate
 				newpoll['toDate'] = dates.endDate
-				samplesize = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))[0]
-				sampleresult = samplere.match(samplesize.strip().replace(',',''))
-				newpoll['size'] = sampleresult.group('size')
-				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
+				sampledata = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))
+				if len(sampledata)>0:				
+					samplesize = sampledata[0]
+					sampleresult = samplere.match(samplesize.strip().replace(',',''))
+					newpoll['size'] = sampleresult.group('size')
+					newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
+				else:
+					newpoll['size'] = 0
+					newpoll['votertype'] = 'UK'					
 				if newpoll['votertype'] in ['n/a']:
 					newpoll['votertype'] = 'UK'
 				margininput = filter(lambda x:marginre.match(x.strip()),list(row.xpath("td[1]")[0].itertext()))
@@ -88,18 +95,24 @@ def getpolls():
 				newpoll = dict()
 				newpoll['pollers'] = map(lambda x:x.strip(),row.xpath("td[1]/p/a/text()"))
 				newpoll['url'] = row.xpath("td[1]/p/a/@href")
+				logging.info('Parsing date %s' % row.xpath("td[2]/text()")[0])
 				dates = getDateSpan(row.xpath("td[2]/text()"))
 				newpoll['fromDate'] = dates.startDate
 				newpoll['toDate'] = dates.endDate
-				samplesize = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]/p")[0].itertext()))[0]
-				sampleresult = samplere.match(samplesize.strip().replace(',',''))
+				sampledata = filter(lambda x:samplere.match(x.strip()),list(row.xpath("td[1]/p")[0].itertext()))
+				if len(sampledata)>0:				
+					samplesize = sampledata[0]
+					sampleresult = samplere.match(samplesize.strip().replace(',',''))
+					newpoll['size'] = sampleresult.group('size')
+					newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
+				else:
+					newpoll['size'] = 0
+					newpoll['votertype'] = 'UK'					
 				margininput = filter(lambda x:marginre.match(x.strip()),list(row.xpath("td[1]/p")[0].itertext()))
 				if len(margininput)>0:
 					newpoll['margin']=float(marginre.match(margininput[0].strip()).group('margin'))
 				else:
 					newpoll['margin']=float(0)
-				newpoll['size'] = sampleresult.group('size')
-				newpoll['votertype'] = sampleresult.group('votertype') or 'UK'
 				if newpoll['votertype'] in ['n/a']:
 					newpoll['votertype'] = 'UK'
 					polls.append(newpoll)
